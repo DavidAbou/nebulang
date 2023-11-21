@@ -1,0 +1,47 @@
+program ::= (statement)*
+
+statement ::= (assignment | if | while | print | read | emit | exp)
+
+scope ::= "{" (statement)* "}"
+
+assignment ::= (atomAssignment | seqAssignment)
+
+atomAssignment ::= (atom (identifier) "=" (expression) ";")
+
+seqAssignment ::= (seq (identifier) "=" (expression) ";")
+
+if ::= ("if" "(" (expression) ")" (scope) ("else" (scope))?)
+
+while ::= ("while" "(" (expression) ")" (scope))
+
+print ::= ("print" (expression) ";")
+
+read ::= ("read" (identifier) ";")
+
+emit ::= ("emit" (expression) ";")
+
+exp ::= ("exp" (identifier) "(" (expression)* ")" (scope))
+
+expression ::= (atom | seq | binop | unop | call | identifier | literal)
+
+atom ::= (identifier | literal)
+
+seq ::= (identifier "." identifier)
+
+binop ::= (expression (operator) expression)
+
+unop ::= (operator expression)
+
+identifier ::= (letter (letter | digit | "_")*)
+
+literal ::= (number | string | "true" | "false")
+
+operator ::= ("+" | "-" | "*" | "/" | "%" | "==" | "!=" | "<" | ">" | "<=" | ">=" | "&&" | "||" | "!" | "^")
+
+number ::= (digit)+
+
+string ::= "\"" (character)* "\""
+
+letter ::= ("a" | ... | "z" | "A" | ... | "Z")
+
+digit ::= ("0" | ... | "9")
