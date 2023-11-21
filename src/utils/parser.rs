@@ -52,8 +52,7 @@ pub enum AstNode {
     InjectStmt {
         experiments: Vec<String>,
         file: String
-    },
-    PrintStmt(Box<AstNode>)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -143,25 +142,11 @@ impl Parser {
     }
 
     fn parse_emit_stmt(&mut self) -> Result<AstNode, String> {
-        if let Some(t) = self.peek(1) {
-            if t.kind == TokenKind::OpenParen {
-                self.advance();
-                let expression = self.parse_expression(0)?;
+        let expression = self.parse_expression(0)?;
 
-                self.expect(TokenKind::CloseParen)?;
-                self.expect(TokenKind::Semi)?;
+        self.expect(TokenKind::Semi)?;
 
-                return Ok(AstNode::EmitStmt(Box::new(expression)));
-            } else {
-                let expression = self.parse_expression(0)?;
-
-                self.expect(TokenKind::Semi)?;
-
-                return Ok(AstNode::EmitStmt(Box::new(expression)));
-            }
-        }
-
-        return Err(format!("Expected expression after return statement"));
+        return Ok(AstNode::EmitStmt(Box::new(expression)));
     }
 
     fn parse_set_stmt(&mut self) ->Result<AstNode, String> {
@@ -473,13 +458,6 @@ impl Parser {
                 let stmt = self.parse_inject_stmt()?;
 
                 return Ok(Some(stmt));
-            },
-            TokenKind::Print => {
-                let expression = self.parse_expression(0)?;
-
-                self.expect(TokenKind::Semi)?;
-
-                Ok(Some(AstNode::PrintStmt(Box::new(expression))))
             },
             TokenKind::Iter => {
                 let stmt = self.parse_iter_stmt()?;

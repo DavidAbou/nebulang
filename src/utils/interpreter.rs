@@ -118,6 +118,13 @@ pub struct RuntimeEnv {
     pub call_stack: Vec<CallFrame>,
 }
 
+fn print_builtin(args: Vec<StackValue>) -> Result<StackValue, String> {
+    for arg in args {
+        println!("{:?}", arg);
+    }
+    Ok(StackValue::Void)
+}
+
 fn write_builtin(args: Vec<StackValue>) -> Result<StackValue, String> {
     for arg in args {
         if let StackValue::String(arg) = arg {
@@ -221,6 +228,7 @@ impl RuntimeEnv {
     }
 
     fn add_builtins_experiments(&mut self) {
+        self.experiments.insert("Print".to_string(), ExperimentEnv::new_builtin(print_builtin));
         self.experiments.insert("Write".to_string(), ExperimentEnv::new_builtin(write_builtin));
         self.experiments.insert("Read".to_string(), ExperimentEnv::new_builtin(read_builtin));
         self.experiments.insert("Len".to_string(), ExperimentEnv::new_builtin(len_builtin));
@@ -554,30 +562,6 @@ impl Interpreter {
                     if !found_experiments.contains(&experiment) {
                         return Err(format!("Cannot find experiment '{}' in '{}'", experiment, file));
                     }
-                }
-            },
-            AstNode::PrintStmt(expr) => {
-                self.interpret(expr, env)?;
-                if let Some(value) = env.stack.pop() {
-                    match value {
-                        StackValue::Int(value) => print!("{}", value),
-                        StackValue::Char(value) => print!("{}", value),
-                        StackValue::String(value) => print!("{}", value),
-                        StackValue::Bool(value) => print!("{}", value),
-                        StackValue::Sequence(value) => {
-                            print!("[");
-                            for (i, value) in value.iter().enumerate() {
-                                if i > 0 {
-                                    print!(", ");
-                                }
-                                print!("'{:?}'", value);
-                            }
-                            print!("]");
-                        },
-                        StackValue::Void => print!("void")
-                    }
-                } else {
-                    return Err("Stack underflow when printing".to_string());
                 }
             },
             AstNode::Identifier(name) => {
