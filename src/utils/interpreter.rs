@@ -133,7 +133,7 @@ fn write_builtin(args: Vec<StackValue>) -> Result<StackValue, String> {
 
 fn read_builtin(_: Vec<StackValue>) -> Result<StackValue, String> {
     let mut input = String::new();
-    println!("Enter input: "); // Optional: Prompt for input
+
     if let Err(e) = std::io::stdin().read_line(&mut input) {
         return Err(format!("Failed to read from stdin: {}", e));
     }
