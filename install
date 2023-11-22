@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+CARGO_PATH=$(which cargo)
+
+if [ -z "$CARGO_PATH" ]; then
+    echo "Cargo not found. Please make sure it is installed and in your PATH."
+    exit 1
+fi
+
+"$CARGO_PATH" build --release
+
+sudo install -m 755 target/release/nebulang /usr/bin
