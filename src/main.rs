@@ -5,9 +5,9 @@
 // main
 //
 
-use std::io;
+use std::{io, process::exit};
 
-use nebulang::utils::{Tokenizer, Parser, Interpreter, RuntimeEnv};
+use nebulang::utils::{Tokenizer, Parser, Interpreter, RuntimeEnv, StackValue};
 
 fn main() -> io::Result<()> {
     let file = match std::env::args().nth(1) {
@@ -28,19 +28,15 @@ fn main() -> io::Result<()> {
             Ok(token) => tokens.push(token),
             Err(err) => {
                 eprintln!("{}", err);
-                break;
+                exit(84)
             }
         }
     }
-
-    // println!("{:?}", tokens);
 
     let mut parser = Parser::new(tokens);
 
     match parser.parse() {
         Ok(ast) => {
-            // println!("{:#?}", ast);
-
             let mut interpreter = Interpreter;
             let mut env = RuntimeEnv::new();
 
@@ -50,18 +46,28 @@ fn main() -> io::Result<()> {
                 Ok(_) => {
                     if let Some(frame) = env.call_stack.last() {
                         match frame.return_value {
-                            Some(ref value) => println!("Return value: {}", value),
-                            None => println!("No return value")
+                            Some(StackValue::Int(i)) => {
+                                exit(i)
+                            },
+                            None => exit(0),
+                            _ => {
+                                eprintln!("Invalid return value");
+                                exit(84)
+                            }
                         }
                     } else {
-                        println!("No return value");
+                        exit(0)
                     }
                 },
-                Err(err) => eprintln!("{}", err)
+                Err(err) => {
+                    eprintln!("{}", err);
+                    exit(84)
+                }
             }
         },
-        Err(err) => eprintln!("{}", err)
+        Err(err) => {
+            eprintln!("{}", err);
+            exit(84)
+        }
     }
-
-    Ok(())
 }

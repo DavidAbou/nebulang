@@ -5,7 +5,25 @@
 // tokenizer
 //
 
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
+
+pub struct TokenizerError {
+    message: String
+}
+
+impl Display for TokenizerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TokenizerError: {}", self.message)
+    }
+}
+
+impl TokenizerError {
+    fn new(message: String) -> Self {
+        Self {
+            message
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct Token {
@@ -122,7 +140,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn next_token(&mut self) -> Option<Result<Token, String>> {
+    pub fn next_token(&mut self) -> Option<Result<Token, TokenizerError>> {
         while let Some(&c) = self.chars.peek() {
             return if c.is_alphabetic() {
                 Some(self.parse_identifier())
@@ -233,7 +251,7 @@ impl<'a> Tokenizer<'a> {
                         text: None
                     }))
                 } else {
-                    Some(Err(format!("Unexpected character '{}'.", c)))
+                    Some(Err(TokenizerError::new(format!("Unexpected character '{}'.", c))))
                 }
             } else if c == '=' {
                 self.chars.next();
@@ -285,7 +303,7 @@ impl<'a> Tokenizer<'a> {
                             self.chars.next();
                             string.push('"');
                         } else {
-                            return Some(Err(format!("Unexpected character '{}'.", c)));
+                            return Some(Err(TokenizerError::new(format!("Unexpected character '{}'.", c))));
                         }
                     } else {
                         string.push(c);
@@ -313,11 +331,11 @@ impl<'a> Tokenizer<'a> {
                             self.chars.next();
                             '\''
                         } else {
-                            return Some(Err(format!("Unexpected character '{}'.", c)));
+                            return Some(Err(TokenizerError::new(format!("Unexpected character '{}'.", c))));
                         }
                     },
                     Some(c) => c,
-                    None => return Some(Err(format!("Unexpected character '{}'.", c)))
+                    None => return Some(Err(TokenizerError::new(format!("Unexpected character '{}'.", c))))
                 };
 
                 if let Some('\'') = self.chars.next() {
@@ -326,7 +344,7 @@ impl<'a> Tokenizer<'a> {
                         text: Some(char.to_string())
                     }))
                 } else {
-                    Some(Err(format!("Unexpected character '{}'.", c)))
+                    Some(Err(TokenizerError::new(format!("Unexpected character '{}'.", c))))
                 }
             } else if c == ',' {
                 self.chars.next();
@@ -350,13 +368,13 @@ impl<'a> Tokenizer<'a> {
                 self.chars.next();
                 continue;
             } else {
-                Some(Err(format!("Unexpected character '{}'.", c)))
+                Some(Err(TokenizerError::new(format!("Unexpected character '{}'.", c))))
             }
         }
         None
     }
 
-    fn parse_identifier(&mut self) -> Result<Token, String> {
+    fn parse_identifier(&mut self) -> Result<Token, TokenizerError> {
         let mut identifier = String::new();
 
         while let Some(&c) = self.chars.peek() {
@@ -432,7 +450,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    fn parse_number(&mut self) -> Result<Token, String> {
+    fn parse_number(&mut self) -> Result<Token, TokenizerError> {
         let mut number = String::new();
 
         while let Some(&c) = self.chars.peek() {

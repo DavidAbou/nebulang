@@ -5,7 +5,51 @@
 // parser
 //
 
+use std::fmt::Display;
+
 use crate::utils::tokenizer::{Token, TokenKind};
+
+pub enum ParseErrorKind {
+    UnexpectedToken,
+    SyntaxError,
+    TypeError
+}
+
+pub struct ParseError {
+    kind: ParseErrorKind,
+    pub message: String
+}
+
+impl ParseError {
+    pub fn new(kind: ParseErrorKind, message: String) -> Self {
+        Self {
+            kind,
+            message
+        }
+    }
+
+    pub fn unexpected_token(message: String) -> Self {
+        Self::new(ParseErrorKind::UnexpectedToken, message)
+    }
+
+    pub fn syntax_error(message: String) -> Self {
+        Self::new(ParseErrorKind::SyntaxError, message)
+    }
+
+    pub fn type_error(message: String) -> Self {
+        Self::new(ParseErrorKind::TypeError, message)
+    }
+}
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.kind {
+            ParseErrorKind::UnexpectedToken => write!(f, "ParseError: Unexpected token: {}", self.message),
+            ParseErrorKind::SyntaxError => write!(f, "ParseError: Syntax error: {}", self.message),
+            ParseErrorKind::TypeError => write!(f, "ParseError: Type error: {}", self.message)
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeAnnotation {
@@ -103,7 +147,7 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Result<AstNode, String> {
+    pub fn parse(&mut self) -> Result<AstNode, ParseError> {
         let mut nodes = Vec::new();
 
         while !self.is_at_end() {
@@ -117,7 +161,7 @@ impl Parser {
         Ok(AstNode::Program(nodes))
     }
 
-    fn parse_type_annotation(&mut self) -> Result<TypeAnnotation, String> {
+    fn parse_type_annotation(&mut self) -> Result<TypeAnnotation, ParseError> {
         let token = self.advance();
 
         match &token.kind {
@@ -134,14 +178,14 @@ impl Parser {
                         Ok(TypeAnnotation::Sequence(Box::new(inner_type)))
                     },
                     Some("Void") => Ok(TypeAnnotation::Void),
-                    _ => Err(format!("Unknown type: {:?}", token))
+                    _ => Err(ParseError::type_error(format!("Unknown type: {:?}", token)))
                 }
             },
-            _ => Err(format!("Expected type annotation, found {:?}", token)),
+            _ => Err(ParseError::type_error(format!("Expected type annotation, found {:?}", token)))
         }
     }
 
-    fn parse_emit_stmt(&mut self) -> Result<AstNode, String> {
+    fn parse_emit_stmt(&mut self) -> Result<AstNode, ParseError> {
         let expression = self.parse_expression(0)?;
 
         self.expect(TokenKind::Semi)?;
@@ -149,10 +193,10 @@ impl Parser {
         return Ok(AstNode::EmitStmt(Box::new(expression)));
     }
 
-    fn parse_set_stmt(&mut self) ->Result<AstNode, String> {
+    fn parse_set_stmt(&mut self) ->Result<AstNode, ParseError> {
         let identifier = match self.advance() {
             Token { kind: TokenKind::Identifier, text: Some(text) } => text.to_string(),
-            _ => return Err(format!("Expected identifier after set keyword"))
+            _ => return Err(ParseError::unexpected_token(format!("Expected identifier after set keyword")))
         };
 
         self.expect(TokenKind::Colon)?;
@@ -168,7 +212,7 @@ impl Parser {
         Ok(AstNode::SetStmt(identifier, type_annotation, Box::new(expression)))
     }
 
-    fn parse_scope_stmt(&mut self) -> Result<AstNode, String> {
+    fn parse_scope_stmt(&mut self) -> Result<AstNode, ParseError> {
         let mut nodes = Vec::new();
 
         while let Some(token) = self.peek(0) {
@@ -187,16 +231,16 @@ impl Parser {
         Ok(AstNode::ScopeStmt(nodes))
     }
 
-    fn parse_exp_stmt(&mut self) -> Result<AstNode, String> {
+    fn parse_exp_stmt(&mut self) -> Result<AstNode, ParseError> {
         let name = self.advance();
 
         if name.kind != TokenKind::Identifier {
-            return Err(format!("Expected identifier after exp keyword"));
+            return Err(ParseError::unexpected_token(format!("Expected identifier after exp keyword")));
         }
 
         let name = name.text.as_ref()
             .map(|t| t.to_string())
-            .ok_or_else(|| format!("Invalid identifier: {:?}", name))?;
+            .ok_or_else(|| ParseError::unexpected_token(format!("Invalid identifier: {:?}", name)))?;
 
         self.expect(TokenKind::OpenParen)?;
 
@@ -210,12 +254,12 @@ impl Parser {
                 let name = self.advance();
 
                 if name.kind != TokenKind::Identifier {
-                    return Err(format!("Expected identifier after exp keyword"));
+                    return Err(ParseError::unexpected_token(format!("Expected identifier after exp keyword")));
                 }
 
                 let name = name.text.as_ref()
                     .map(|t| t.to_string())
-                    .ok_or_else(|| format!("Invalid identifier: {:?}", name))?;
+                    .ok_or_else(|| ParseError::unexpected_token(format!("Invalid identifier: {:?}", name)))?;
 
                 self.expect(TokenKind::Colon)?;
 
@@ -229,7 +273,7 @@ impl Parser {
 
                 parameters.push((name, type_annotation));
             } else {
-                return Err(format!("Expected identifier after exp keyword"));
+                return Err(ParseError::unexpected_token(format!("Expected identifier after exp keyword")));
             }
         }
         self.expect(TokenKind::Colon)?;
@@ -248,7 +292,7 @@ impl Parser {
         })
     }
 
-    fn parse_if_stmt(&mut self) -> Result<AstNode, String> {
+    fn parse_if_stmt(&mut self) -> Result<AstNode, ParseError> {
         let condition = self.parse_expression(0)?;
 
         self.expect(TokenKind::OpenCurly)?;
@@ -273,7 +317,7 @@ impl Parser {
         Ok(AstNode::IfStmt(Box::new(condition), Box::new(if_scope), otherwise))
     }
 
-    fn parse_unless_stmt(&mut self) -> Result<AstNode, String> {
+    fn parse_unless_stmt(&mut self) -> Result<AstNode, ParseError> {
         let condition = self.parse_expression(0)?;
 
         self.expect(TokenKind::OpenCurly)?;
@@ -298,7 +342,7 @@ impl Parser {
         Ok(AstNode::IfStmt(Box::new(condition), Box::new(unless_scope), otherwise))
     }
 
-    fn parse_while_stmt(&mut self) -> Result<AstNode, String> {
+    fn parse_while_stmt(&mut self) -> Result<AstNode, ParseError> {
         let condition = self.parse_expression(0)?;
 
         self.expect(TokenKind::OpenCurly)?;
@@ -308,7 +352,7 @@ impl Parser {
         Ok(AstNode::WhileStmt(Box::new(condition), Box::new(scope)))
     }
 
-    fn parse_inject_stmt(&mut self) -> Result<AstNode, String> {
+    fn parse_inject_stmt(&mut self) -> Result<AstNode, ParseError> {
         let mut experiments = Vec::new();
 
         self.expect(TokenKind::OpenParen)?;
@@ -325,7 +369,7 @@ impl Parser {
                 }
                 experiments.push(match self.advance() {
                     Token { kind: TokenKind::Identifier, text: Some(text) } => text.to_string(),
-                    _ => return Err(format!("Expected identifier after inject keyword"))
+                    _ => return Err(ParseError::unexpected_token(format!("Expected identifier after inject keyword")))
                 });
             }
         }
@@ -334,7 +378,7 @@ impl Parser {
 
         let file = match self.parse_expression(0)? {
             AstNode::StringLiteral(string) => string,
-            _ => return Err(format!("Expected string literal after inject keyword"))
+            _ => return Err(ParseError::unexpected_token(format!("Expected string literal after inject keyword")))
         };
 
         self.expect(TokenKind::Semi)?;
@@ -345,12 +389,12 @@ impl Parser {
         })
     }
 
-    fn parse_iter_stmt(&mut self) -> Result<AstNode, String> {
+    fn parse_iter_stmt(&mut self) -> Result<AstNode, ParseError> {
         self.expect(TokenKind::OpenParen)?;
 
         let variable = match self.advance() {
             Token { kind: TokenKind::Identifier, text: Some(text) } => text.to_string(),
-            _ => return Err(format!("Expected identifier after iter keyword"))
+            _ => return Err(ParseError::unexpected_token(format!("Expected identifier after iter keyword")))
         };
 
         self.expect(TokenKind::Colon)?;
@@ -374,10 +418,10 @@ impl Parser {
         })
     }
 
-    fn parse_identifier_stmt(&mut self, current_token: Token) -> Result<AstNode, String> {
+    fn parse_identifier_stmt(&mut self, current_token: Token) -> Result<AstNode, ParseError> {
         let name = current_token.text.as_ref()
             .map(|t| t.to_string())
-            .ok_or_else(|| format!("Invalid identifier: {:?}", current_token))?;
+            .ok_or_else(|| ParseError::unexpected_token(format!("Invalid identifier: {:?}", current_token)))?;
 
         let token = self.advance();
 
@@ -411,11 +455,11 @@ impl Parser {
 
             Ok(AstNode::AssignmentStmt(Box::new(AstNode::Identifier(name)), Box::new(expression)))
         } else {
-            Err(format!("Unexpected token {:?} in statement.", token))
+            Err(ParseError::unexpected_token(format!("{:?} in statement.", token)))
         }
     }
 
-    fn parse_statement(&mut self) -> Result<Option<AstNode>, String> {
+    fn parse_statement(&mut self) -> Result<Option<AstNode>, ParseError> {
         let token = self.advance();
 
         match token.kind {
@@ -470,13 +514,11 @@ impl Parser {
 
                 return Ok(Some(stmt));
             },
-            _ => {
-                Err(format!("Unexpected token {:?} in statement.", token))
-            }
+            _ => Err(ParseError::unexpected_token(format!("{:?} in statement.", token)))
         }
     }
 
-    fn parse_expression(&mut self, min_precedence: u8) -> Result<AstNode, String> {
+    fn parse_expression(&mut self, min_precedence: u8) -> Result<AstNode, ParseError> {
         let mut left_expr = self.parse_primary()?;
 
         while let Some(op) = self.peek_operator() {
@@ -504,7 +546,7 @@ impl Parser {
         Ok(left_expr)
     }
 
-    fn parse_primary(&mut self) -> Result<AstNode, String> {
+    fn parse_primary(&mut self) -> Result<AstNode, ParseError> {
         let token = self.advance();
 
         match token.kind {
@@ -512,25 +554,25 @@ impl Parser {
                 token.text.as_ref()
                     .and_then(|t| t.parse::<i32>().ok())
                     .map(AstNode::IntLiteral)
-                    .ok_or_else(|| format!("Invalid integer literal: {:?}", token))
+                    .ok_or_else(|| ParseError::unexpected_token(format!("Invalid integer literal: {:?}", token)))
             },
             TokenKind::Char => {
                 token.text.as_ref()
                     .and_then(|t| t.chars().next())
                     .map(AstNode::CharLiteral)
-                    .ok_or_else(|| format!("Invalid char literal: {:?}", token))
+                    .ok_or_else(|| ParseError::unexpected_token(format!("Invalid char literal: {:?}", token)))
             },
             TokenKind::String => {
                 token.text.as_ref()
                     .map(|t| t.to_string())
                     .map(AstNode::StringLiteral)
-                    .ok_or_else(|| format!("Invalid string literal: {:?}", token))
+                    .ok_or_else(|| ParseError::unexpected_token(format!("Invalid string literal: {:?}", token)))
             },
             TokenKind::Bool => {
                 token.text.as_ref()
                     .and_then(|t| t.parse::<bool>().ok())
                     .map(AstNode::BoolLiteral)
-                    .ok_or_else(|| format!("Invalid bool literal: {:?}", token))
+                    .ok_or_else(|| ParseError::unexpected_token(format!("Invalid bool literal: {:?}", token)))
             },
             TokenKind::OpenParen => {
                 let expression = self.parse_expression(0)?;
@@ -560,7 +602,7 @@ impl Parser {
             TokenKind::Identifier => {
                 let name = token.text.as_ref()
                     .map(|t| t.to_string())
-                    .ok_or_else(|| format!("Invalid identifier: {:?}", token))?;
+                    .ok_or_else(|| ParseError::unexpected_token(format!("Invalid identifier: {:?}", token)))?;
 
                 let token = self.peek(0).unwrap();
 
@@ -591,7 +633,7 @@ impl Parser {
                     arguments
                 })
             },
-            _ => Err(format!("Unexpected token {:?} in expression.", token))
+            _ => Err(ParseError::unexpected_token(format!("{:?} in expression.", token)))
         }
     }
 
@@ -626,13 +668,13 @@ impl Parser {
         }
     }
 
-    fn expect(&mut self, kind: TokenKind) -> Result<(), String> {
+    fn expect(&mut self, kind: TokenKind) -> Result<(), ParseError> {
         let token = self.advance();
 
         if token.kind == kind {
             Ok(())
         } else {
-            Err(format!("Expected {:?} got {:?}", kind, token.kind))
+            Err(ParseError::syntax_error(format!("Expected {:?} got {:?}", kind, token.kind)))
         }
     }
 

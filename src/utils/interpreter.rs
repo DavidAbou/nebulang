@@ -527,14 +527,14 @@ impl Interpreter {
                     match token {
                         Ok(token) => tokens.push(token),
                         Err(err) => {
-                            return Err(format!("Failed to tokenize module '{}': {}", file, err));
+                            return Err(format!("{}", err));
                         }
                     }
                 }
 
                 let module_ast = Parser::new(tokens)
                     .parse()
-                    .map_err(|err| format!("Failed to parse module '{}': {}", file, err))?;
+                    .map_err(|err| format!("{}", err))?;
 
                 let mut found_experiments = Vec::new();
 
