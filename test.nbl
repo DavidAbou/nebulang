@@ -1,5 +1,0 @@
-set name: String = Read();
-
-Write(String(Len(name)) + '\n');
-
-emit 0;
