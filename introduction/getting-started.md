@@ -17,7 +17,7 @@ To start using NebuLang, follow these steps:
 
 Open your terminal and run the following command to clone the NebuLang repository from GitHub:
 
-<pre class="language-bash" data-full-width="false"><code class="lang-bash"><strong>git clone https://github.com/DavidAbou/nebulang
+<pre class="language-bash" data-full-width="false"><code class="lang-bash"><strong>git clone https://github.com/nethriis/nebulang
 </strong></code></pre>
 
 #### Run the install script

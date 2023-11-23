@@ -8,7 +8,7 @@ NebuLang's syntax is intentionally minimalistic, making it easy to read and writ
 
 ### Data Types
 
-NebuLang supports essential data types, including `Int` for integers, `Char` for characters, `String` for strings, `Bool` for booleans, `Sequence` for sequences, and `Void` for functions with no return value.
+NebuLang supports essential data types, including `Int` for integers, `Char` for characters, `String` for strings, `Bool` for booleans, `Sequence` for sequences, and `Void` for experiments with no return value.
 
 ### Control Structures
 
@@ -18,9 +18,9 @@ NebuLang offers straightforward control structures such as `if-otherwise` for co
 
 In NebuLang there is no function. There is experiment.
 
-### Native Functions
+### Native Experiments
 
-NebuLang includes a set of native functions for common tasks, such as `Print` for displaying output, `Write` for printing strings, `Read` for reading input, and type conversion functions like `Int`, `Char`, `String`, and `Bool`.
+NebuLang includes a set of native experiments for common tasks, such as `Print` for displaying output, `Write` for printing strings, `Read` for reading input, and type conversion experiments like `Int`, `Char`, `String`, and `Bool`.
 
 ### Simplicity in mind
 
@@ -30,16 +30,16 @@ NebuLang prioritizes simplicity, making it ideal for simple applications and qui
 
 Join the NebuLang community on Discord or GitHub to connect with other developers, seek assistance, and contribute to the language's growth.
 
+{% embed url="https://github.com/nethriis/nebulang" %}
+
+{% embed url="https://discord.gg/AF6MwyvkPv" %}
+
 ### Extensible
 
-While NebuLang's standard library is minimal, you have the flexibility to extend it by injecting your own names and functions as needed.
+While NebuLang's standard library is minimal, you have the flexibility to extend it by injecting your own names and experiments as needed.
 
 ### Lightweight interpreter
 
 NebuLang is powered by a lightweight interpreter, making it easy to run and test your code.
 
 These features collectively contribute to NebuLang's goal of providing a minimalistic, comprehensible, and efficient programming experience. Whether you're a beginner looking to learn the basics of programming or an experienced developer seeking a clean and simple language for specific tasks, NebuLang has something to offer.
-
-
-
-{% embed url="https://github.com/DavidAbou/nebulang" %}
